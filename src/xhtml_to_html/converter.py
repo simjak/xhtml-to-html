@@ -2,7 +2,8 @@
 
 import logging
 import os
-from typing import List
+from pathlib import Path
+from typing import List, Union
 
 import lxml.etree as ET
 
@@ -127,6 +128,34 @@ def validate_input_file(file_path: str) -> None:
     except Exception as e:
         raise ValueError(f"Invalid XHTML file: {str(e)}")
 
+
+def convert(input_path: Union[str, Path], output_path: Union[str, Path]) -> None:
+    """
+    Convert XHTML file to HTML with enhanced structure preservation.
+
+    Args:
+        input_path: Path to input XHTML file (str or Path object)
+        output_path: Path to output HTML file (str or Path object)
+    """
+    # Convert to Path objects if strings
+    input_path = Path(input_path)
+    output_path = Path(output_path)
+
+    try:
+        logger.info(f"Converting {input_path} to HTML...")
+        with open(input_path, encoding="utf-8", errors="replace") as fin:
+            xhtml_content = fin.read()
+
+        html_content = remove_namespaces(xhtml_content)
+
+        with open(output_path, "w", encoding="utf-8") as fout:
+            fout.write(html_content)
+
+        logger.info(f"Successfully converted to HTML: {output_path}")
+
+    except Exception as e:
+        logger.error(f"Error during HTML conversion: {str(e)}")
+        raise
 
 def xhtml_to_html(xhtml_file: str, output_html: str) -> None:
     """

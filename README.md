@@ -17,6 +17,14 @@ A Python tool for converting XHTML documents to HTML while preserving layout and
 
 ## Installation
 
+You can install the package directly from PyPI:
+
+```bash
+pip install xhtml-to-html
+```
+
+For development installation:
+
 1. Clone the repository:
 ```bash
 git clone https://github.com/yourusername/xhtml-to-html.git
@@ -30,16 +38,34 @@ uv sync
 
 ## Usage
 
-Convert an XHTML file to HTML:
+Convert an XHTML file to HTML using the command line:
 
 ```bash
-uv run xhtml-to-html --input input.xhtml --output output.html
+xhtml-to-html --input input.xhtml --output output.html
 ```
 
 Example:
 
 ```bash
-uv run xhtml-to-html --input data/airbus.xhtml --output data/output.html
+xhtml-to-html --input data/airbus.xhtml --output data/output.html
+```
+
+Or use it in your Python code:
+
+```python
+from pathlib import Path
+from xhtml_to_html import convert
+
+# Convert XHTML to HTML
+input_path = Path("input.xhtml")
+output_path = Path("output.html")
+convert(input_path, output_path)
+```
+
+For development usage (if you cloned the repository):
+
+```bash
+uv run xhtml-to-html --input input.xhtml --output output.html
 ```
 
 ## License
