@@ -17,10 +17,16 @@ A Python tool for converting XHTML documents to HTML while preserving layout and
 
 ## Installation
 
-You can install the package directly from PyPI:
+You can install the package directly from PyPI(not ready yet):
 
 ```bash
 pip install xhtml-to-html
+```
+
+Or from GitHub repository:
+
+```bash
+uv add git+https://github.com/simjak/xhtml-to-html.git
 ```
 
 For development installation:
