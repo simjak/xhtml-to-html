@@ -41,7 +41,7 @@ def enhance_table_structure(tree: ET._Element) -> None:
 
 def remove_namespaces(xml_content: str) -> str:
     """
-    Enhanced namespace removal that preserves document structure and styling.
+    Transform XHTML to HTML while preserving necessary namespaces and structure.
     """
     try:
         parser = create_parser()
@@ -53,14 +53,51 @@ def remove_namespaces(xml_content: str) -> str:
         # Enhance table structure
         enhance_table_structure(tree)
 
+        # Get DOCTYPE from original document if it exists
+        doctype = ""
+        try:
+            if hasattr(tree, 'docinfo') and tree.docinfo.doctype:
+                doctype = tree.docinfo.doctype
+        except:
+            pass
+
         xslt_remove_ns = b"""
             <xsl:stylesheet version="1.0"
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                exclude-result-prefixes="*">
+                xmlns:xhtml="http://www.w3.org/1999/xhtml"
+                xmlns:ix="http://www.xbrl.org/2013/inlineXBRL"
+                xmlns:xbrli="http://www.xbrl.org/2003/instance"
+                xmlns:link="http://www.xbrl.org/2003/linkbase"
+                xmlns:xlink="http://www.w3.org/1999/xlink"
+                xmlns:ifrs-full="https://xbrl.ifrs.org/taxonomy/2022-03-24/ifrs-full"
+                xmlns:iso4217="http://www.xbrl.org/2003/iso4217"
+                xmlns:xbrldi="http://xbrl.org/2006/xbrldi">
 
-              <xsl:output method="html" indent="yes" encoding="UTF-8"/>
+              <xsl:output method="html" indent="yes" encoding="UTF-8" doctype-system="about:legacy-compat"/>
 
-              <!-- Keep elements with structure preservation -->
+              <!-- Copy all namespaces and attributes to root element -->
+              <xsl:template match="/*">
+                <html>
+                  <xsl:copy-of select="namespace::*"/>
+                  <xsl:apply-templates select="@*"/>
+                  <xsl:if test="@xml:lang">
+                    <xsl:attribute name="lang">
+                      <xsl:value-of select="@xml:lang"/>
+                    </xsl:attribute>
+                  </xsl:if>
+                  <xsl:apply-templates select="node()"/>
+                </html>
+              </xsl:template>
+
+              <!-- Preserve all XBRL elements with their namespaces -->
+              <xsl:template match="*[contains(namespace-uri(), 'xbrl') or contains(namespace-uri(), 'ifrs')]">
+                <xsl:element name="{name()}" namespace="{namespace-uri()}">
+                  <xsl:copy-of select="namespace::*"/>
+                  <xsl:apply-templates select="@*|node()"/>
+                </xsl:element>
+              </xsl:template>
+
+              <!-- Default element handling -->
               <xsl:template match="*">
                 <xsl:element name="{local-name()}">
                   <xsl:apply-templates select="@*"/>
@@ -68,11 +105,20 @@ def remove_namespaces(xml_content: str) -> str:
                 </xsl:element>
               </xsl:template>
 
-              <!-- Preserve all attributes -->
+              <!-- Copy all attributes -->
               <xsl:template match="@*">
-                <xsl:attribute name="{local-name()}">
-                  <xsl:value-of select="."/>
-                </xsl:attribute>
+                <xsl:choose>
+                  <xsl:when test="local-name() = 'lang' and namespace-uri() = 'http://www.w3.org/XML/1998/namespace'">
+                    <xsl:attribute name="lang">
+                      <xsl:value-of select="."/>
+                    </xsl:attribute>
+                  </xsl:when>
+                  <xsl:otherwise>
+                    <xsl:attribute name="{local-name()}">
+                      <xsl:value-of select="."/>
+                    </xsl:attribute>
+                  </xsl:otherwise>
+                </xsl:choose>
               </xsl:template>
 
               <!-- Special handling for table structure -->
@@ -94,17 +140,9 @@ def remove_namespaces(xml_content: str) -> str:
         combined_styles = "\n".join([TABLE_CSS] + original_styles)
         style_element = f"<style>{combined_styles}</style>"
 
-        # Insert doctype and combined styles
-        result = f"""<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    {style_element}
-</head>
-<body>
-{str(transformed_tree)}
-</body>
-</html>"""
+        # Insert doctype (original or default) and combined styles
+        result = f"""{doctype if doctype else '<!DOCTYPE html>'}
+{str(transformed_tree)}"""
 
         return result
 
